@@ -7,4 +7,3 @@ To view a copy of this license, visit http://creativecommons.org/licenses/by-sa/
 444 Castro Street, Suite 900, Mountain View, California, 94041, USA.
 
 For questions, suggestions and comments regarding the interface and the data format, please contact Y. Le Franc (ylefranc(at)gmail.com).
-==================
