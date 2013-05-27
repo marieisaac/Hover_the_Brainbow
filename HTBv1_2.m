@@ -4,7 +4,7 @@
 %                                                                        %
 %       Created by Yann Le Franc with the help of J. Giocanti            %
 %                                                                        %
-%       Version 1.2: 11/02/2011                                        	 %
+%       Version 1.2: 11/02/2013                                        	 %
 %                                                                        %
 %	This work is licensed under the Creative Commons Attribution 3.0 	 %
 %	Unported License. To view a copy of this license, visit 			 %
@@ -1301,7 +1301,7 @@ setappdata(fh, 'MoveDirection', 0);
         global extdata
         
         exppath=[pathfile, filname];
-        save(exppath, '-struct', 'extdata');
+        save(exppath, '-struct', 'extdata', '-v7.3');
         
     end
 
