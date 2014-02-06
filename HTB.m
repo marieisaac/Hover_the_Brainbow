@@ -2,9 +2,9 @@
 %		       Hover the Brainbow: 										 %
 %		A Brainbow Image Processing Software                             %
 %                                                                        %
-%       Created by Yann Le Franc with the help of J. Giocanti            %
+%       Created by Yann Le Franc                                         %
 %                                                                        %
-%       Version 1.2: 11/02/2013                                        	 %
+%       Version 2.0: 05/02/2014                                        	 %
 %                                                                        %
 %	This work is licensed under the Creative Commons Attribution 3.0 	 %
 %	Unported License. To view a copy of this license, visit 			 %
@@ -21,55 +21,66 @@
 
 
 function varargout = bips(varargin)
-
-%Initialization before creating the interface
+%------------------------------------------------------------------------%
+% Initialization before creating the interface
+%------------------------------------------------------------------------%
 
 close all;
+clear all;
+
+%------------------------------------------------------------------------%
+% Construct the graphical interface
+%------------------------------------------------------------------------%
 
 fh=figure; 
 scrsz=get(0, 'Screensize');
 set(fh, 'Name', 'Over the Brainbow', 'Toolbar', 'figure', 'Position', [1 1 scrsz(3)*0.7 scrsz(4)]);
 set(fh, 'KeyPressFcn', @myShortKey);
 
-%Construct the graphical interface
+%------------------------------------------------------------------------%
+% Create panel containing the load buttons
+%------------------------------------------------------------------------%
 
-%Create panel containing the load buttons
+phload=uipanel('Parent', gcf, 'Title', 'Load Data', 'Position', [0.05 0.7 0.2 0.275]);
 
-phload=uipanel('Parent', gcf, 'Title', 'Load Data', 'Position', [0.05 0.65 0.2 0.3]);
-
-%Create the buttons:
-
-%1- Load Raw Data: load the raw sequence of images
-%2- Load "Visualization" Data: load the modified stack after contrast and
-%gamma enhancement in another software
-%3- Load Extracted Data file: load the saved structure corresponding to
-%particular image sequence to continue the data extraction
+%------------------------------------------------------------------------%
+% Create the buttons:                                                     
+% 1- Load Raw Data: load the raw sequence of images
+% 2- Load "Visualization" Data: load the modified stack after contrast and
+% gamma enhancement in another software
+% 3- Load Extracted Data file: load the saved structure corresponding to
+% particular image sequence to continue the data extraction
+%------------------------------------------------------------------------%
 
 pbhraw=uicontrol(phload, 'Style', 'pushbutton', 'String', 'Load Raw Data', 'Units', 'normalized', 'Position',[0.05, 0.7, 0.9, 0.25], 'Callback', @LoadRawData);
 pbhmod=uicontrol(phload, 'Style', 'pushbutton', 'String', 'Load Modified Data', 'Units', 'normalized', 'Position',[0.05, 0.4, 0.9, 0.25], 'Callback', @LoadModData);
 pbhana=uicontrol(phload, 'Style', 'pushbutton', 'String', 'Continue Data Extraction', 'Units', 'normalized', 'Position',[0.05, 0.1, 0.9, 0.25], 'Callback', @LoadExtData);
 
-%Create panel containing the action buttons
+%------------------------------------------------------------------------%
+% Create panel containing the action buttons 
+%------------------------------------------------------------------------%
 
-phanalyse=uipanel('Parent', gcf, 'Title', 'Data Extraction','Position', [0.05 0.05 0.2 0.5]);
+phanalyse=uipanel('Parent', gcf, 'Title', 'Data Extraction','Position', [0.05 0.175 0.2 0.5]);
 
-%Create button for data extraction
-%1- New Cell: point with the mouse and select the cell of interest. The
-%selected pixel will be used to label the cell. For the first cell
-%selection, the data structure storing all the information to be saved will
-%be created. The zoom information will be stored to be applied to the
-%overall image sequence. CANNOT CREATE A NEW CELL IF CELL HAS NOT BEEN
-%SAVED
-%2- Create ROI: create a freehand roi to select the area of interest. Once
-%the ROI is selected, the corresponding mask  is created in a temporary
-%variable. If the button is pressed again to create another ROI the mask
-%will incoroporated in the full image mask. The following data will be
-%saved in the structure: ROI number, image nb, mask, selected pixel
-%coordinates, selected pixel RGB value, ROI coordinates.
-%3- Delete ROI: in case the ROI is not good, allow to remove the ROI from
-%the data structure and discard the mask
-%4- Save Cell: Stop the acquisition of ROI and allow to create a new cell. 
-%5- Export Data: Save the data structure in a mat file.
+%------------------------------------------------------------------------%
+% Create button for data extraction
+% 1- New Cell: point with the mouse and select the cell of interest. The
+% selected pixel will be used to label the cell. For the first cell
+% selection, the data structure storing all the information to be saved will
+% be created.CANNOT CREATE A NEW CELL IF CELL HAS NOT BEEN
+% SAVED
+% 2- Remove Cell
+% 3- Create ROI: create a freehand roi to select the area of interest. Once
+% the ROI is selected, the corresponding mask  is created in a temporary
+% variable. If the button is pressed again to create another ROI the mask
+% will incoroporated in the full image mask. The following data will be
+% saved in the structure: ROI number, image nb, mask, selected pixel
+% coordinates, selected pixel RGB value, ROI coordinates.
+% 3- Delete ROI: in case the ROI is not good, allow to remove the ROI from
+% the data structure and discard the mask
+% 4- Save Cell: Stop the acquisition of ROI and allow to create a new cell. 
+% 5- Export Data: Save the data structure in a mat file.
+%------------------------------------------------------------------------%
 
 pbhnew=uicontrol(phanalyse, 'Style', 'pushbutton', 'String', 'New Cell (n)', 'Units', 'normalized', 'Position',[0.05, 0.85, 0.9, 0.12], 'Callback', @NewCell);
 pbhremcell=uicontrol(phanalyse, 'Style', 'pushbutton', 'String', 'Delete Current Cell (c)', 'Units', 'normalized', 'Position',[0.05, 0.72, 0.9, 0.12], 'Callback', @RemoveCell);
@@ -77,16 +88,31 @@ pbhroi=uicontrol(phanalyse, 'Style', 'pushbutton', 'String', 'Create ROI (r)', '
 pbhrem=uicontrol(phanalyse, 'Style', 'pushbutton', 'String', 'Delete Current ROI (d)', 'Units', 'normalized', 'Position',[0.05, 0.46, 0.9, 0.12], 'Callback', @RemoveROI);
 pbhsave=uicontrol(phanalyse, 'Style', 'pushbutton', 'String', 'Save Cell (s)', 'Units', 'normalized', 'Position',[0.05, 0.34, 0.9, 0.12], 'Callback', @SaveCell);
 pbhexp=uicontrol(phanalyse, 'Style', 'pushbutton', 'String', 'Export Data (e)', 'Units', 'normalized', 'Position',[0.05, 0.21, 0.9, 0.12], 'Callback', @ExportData);
-pbhselec=uicontrol(phanalyse, 'Style', 'pushbutton', 'String', 'Delete Selected Cell/ROI (t)', 'Units', 'normalized', 'Position',[0.05, 0.08, 0.9, 0.12], 'Callback', @DeleteSelect);
-%Create the main image to be analysed
+
+%------------------------------------------------------------------------%
+% Select Cell/ROI on the image and delete
+% To be implemented in next version
+% pbhselec=uicontrol(phanalyse, 'Style', 'pushbutton', 'String', 'Delete Selected Cell/ROI (t)', 'Units', 'normalized', 'Position',[0.05, 0.08, 0.9, 0.12], 'Callback', @DeleteSelect);
+%------------------------------------------------------------------------%
+
+%------------------------------------------------------------------------%
+% Show plot of data extracted
+%------------------------------------------------------------------------%
+
+phvisu=uipanel('Parent', gcf, 'Title', 'Data Visualization','Position', [0.05 0.05 0.2 0.10]);
+pbhnew=uicontrol(phvisu, 'Style', 'pushbutton', 'String', 'Show plots', 'Units', 'normalized', 'Position',[0.05, 0.05, 0.9, 0.75], 'Callback', @VisuInterface);
 
 ah=axes('Parent', fh, 'Visible', 'off', 'Position', [0.275, 0.05, 0.7, 0.9]);
 
-%Create the slider to navigate through the stack
+%------------------------------------------------------------------------%
+% Create the slider to navigate through the stack
+%------------------------------------------------------------------------%
 
-slh=uicontrol(gcf, 'Style', 'slider', 'Min', 1, 'Max', 100, 'Value', 1, 'SliderStep', [0.1 1], 'Units', 'normalized', 'Position', [0.275, 0.05, 0.7, 0.025], 'Callback', @Move_stack); 
+slh=uicontrol(gcf, 'Style', 'slider', 'Min', 1, 'Max', 100, 'Value', 1, 'SliderStep', [0.1 1], 'Units', 'normalized', 'Position', [0.275, 0.015, 0.7, 0.025], 'Callback', @Move_stack); 
 
-%Callbacks functions
+%------------------------------------------------------------------------%
+% Callbacks functions
+%------------------------------------------------------------------------%
 
 setappdata(fh, 'ROInumber', 0);
 set(pbhroi, 'UserData', 1);
@@ -94,7 +120,9 @@ setappdata(fh, 'Zoomon',0);
 setappdata(fh, 'PrevImage', 1);
 setappdata(fh, 'MoveDirection', 0);
 
-%load Raw Data
+%------------------------------------------------------------------------%
+% Load raw data and store it into a unique 4D matrix
+%------------------------------------------------------------------------%
 
     function LoadRawData(hObject, eventdata)
         
@@ -105,23 +133,24 @@ setappdata(fh, 'MoveDirection', 0);
         dirOutput=dir(fullfile(dirpat, filext)); 
         filenames={dirOutput.name};
 
-        setappdata(fh, 'myrawfiles', filenames);
-        numFrame=numel(filenames);
-
+        %load first image
         sequenceraw=imread(fullfile(dirpat, filenames{1}));
-        set(pbhraw, 'UserData', numFrame);
 
-        for k=2:numFrame
-            sequenceraw(:,:,:,k)=imread(fullfile(dirpat, filenames{k}));
-        end
+        %store file information for fast retrieval and loading
 
-        %setappdata(fh, 'myrawdata', sequenceraw);
-        setappdata(fh, 'myrawpath', dirpat);
+        setappdata(fh, 'myrawpath', dirpat); %store file path as internal variable of the GUI
+        setappdata(fh, 'myrawfiles', filenames); %store structure containing file names as internal variable of the GUI
+        
+        numFrame=numel(filenames); % get the number of File
+        set(pbhraw, 'UserData', numFrame); %Store the number of file as variable attached to the button loading the raw data
+
         sprintf 'Loading complete'
 
     end
 
-%Load pretreated data
+%------------------------------------------------------------------------%
+% Load pretreated data
+%------------------------------------------------------------------------%
 
     function LoadModData(hObject, eventdata)
         
@@ -132,30 +161,30 @@ setappdata(fh, 'MoveDirection', 0);
         dirOutput=dir(fullfile(dirpat, filext)); 
         filenames={dirOutput.name};
 
-        setappdata(fh, 'mymodfiles', filenames);
-        numFrame=numel(filenames);
-
         sequencemod=imread(fullfile(dirpat, filenames{1}));
         axes(ah); 
         image(sequencemod);
         axis off;
-        
-            newXLim = get(ah,'XLim');
-            newYLim = get(ah, 'YLim');
 
-            setappdata(fh,'newXLim',newXLim);
-            setappdata(fh, 'newYLim',newYLim);
+        %Store file information as internal variable of the GUI 
         
-        set(ah, 'UserData', 1);
+        setappdata(fh, 'mymodpath', dirpat);
+
+        setappdata(fh, 'mymodfiles', filenames);
+        numFrame=numel(filenames);
+
         set(pbhmod, 'UserData', numFrame);
+
+        %Store visualization information as internal variable of the GUI
+        newXLim = get(ah,'XLim');
+        newYLim = get(ah, 'YLim');
+
+        setappdata(fh,'newXLim',newXLim);
+        setappdata(fh, 'newYLim',newYLim);
+    
+        set(ah, 'UserData', 1);
         set(pbhnew, 'UserData', 0);
 
-        for k=2:numFrame
-            sequencemod(:,:,:,k)=imread(fullfile(dirpat, filenames{k}));
-        end
-
-        %setappdata(fh, 'mymoddata', sequencemod);
-        setappdata(fh, 'mymodpath', dirpat);
         sprintf 'Loading complete'
         
         set(slh, 'Max', numFrame, 'SliderStep', [(1/(numFrame-1)) (1/(numFrame-1))]);
@@ -165,7 +194,9 @@ setappdata(fh, 'MoveDirection', 0);
         
     end
 
-%Load Data Structure to continue the analysis
+%------------------------------------------------------------------------%
+% Load data structure to continue the analysis
+%------------------------------------------------------------------------%
 
     function LoadExtData(hObject, eventdata)
         
@@ -193,16 +224,25 @@ setappdata(fh, 'MoveDirection', 0);
         extdata=load(filpath, '-mat');
         
         disp ('Import marche')
-        % Import raw data
         
         %Import modified data
         
         dirpat2=extdata.ModData
         filext='*.tif';
-        dirOutput2=dir(fullfile(dirpat2, filext)); 
-        filenames={dirOutput2.name};
+        dirOutput2=dir(fullfile(dirpat2, filext))
+        filenames={dirOutput2.name}
+        
+        if (size(filenames)==[0 0])
+            
+            dirpat2=uigetdir('Select display data folder'); 
+            filext='*.tif';
+            dirOutput2=dir(fullfile(dirpat2, filext)); 
+            filenames={dirOutput2.name};
+
+        end
         
         setappdata(fh, 'mymodfiles', filenames);
+        setappdata(fh, 'mymodpath', dirpat2);
         numFrame=numel(filenames);
 
         sequencemod=imread(fullfile(dirpat2, filenames{1}));
@@ -213,29 +253,28 @@ setappdata(fh, 'MoveDirection', 0);
 
         set(slh, 'Max', numFrame, 'SliderStep', [(1/(numFrame-1)) (1/(numFrame-1))]);
         
-        for k=2:numFrame
-            sequencemod(:,:,:,k)=imread(fullfile(dirpat2, filenames{k}));
-        end
-        
         %Import Raw data
 
         dirpat3=extdata.RawData;
         filext='*.tif';
         dirOutput3=dir(fullfile(dirpat3, filext)); 
         filenames={dirOutput3.name};
-        
-        setappdata(fh, 'mymodfiles', filenames);
+
+        if (size(filenames)==[0 0])
+            
+            dirpat3=uigetdir('Select Raw data folder'); 
+            filext='*.tif';
+            dirOutput3=dir(fullfile(dirpat3, filext)); 
+            filenames={dirOutput3.name};
+
+        end
+
+        setappdata(fh, 'myrawfiles', filenames);
         numFrame=numel(filenames);
 
-        sequenceraw=imread(fullfile(dirpat3, filenames{1}));
+        sequenceraw=imread(fullfile(dirpat3, filenames{1}));    
         
-        for k=2:numFrame
-            sequenceraw(:,:,:,k)=imread(fullfile(dirpat3, filenames{k}));
-        end
-        
-        
-        %setappdata(fh, 'mymoddata', sequencemod);
-        setappdata(fh, 'mymodpath', pathfile);
+        setappdata(fh, 'myrawpath', dirpat3);
         sprintf 'Loading complete'
         
         %SET NBCELLS AND INITIALIZE OTHER VARIABLES
@@ -250,7 +289,9 @@ setappdata(fh, 'MoveDirection', 0);
 
     end
 
-%Navigate through the stack with the slider
+%------------------------------------------------------------------------%
+% Navigate through the stack with the slider
+%------------------------------------------------------------------------%
 
     function Move_stack(hObject, eventdata, handle, sequencemod)
         
@@ -283,8 +324,8 @@ setappdata(fh, 'MoveDirection', 0);
             previmage= getappdata(fh, 'PrevImage');
             MovDir=imagenb-previmage;
             
-            disp(['Previous image is :', num2str(previmage)])
-            disp(['Direction is: ', num2str(MovDir)])
+%            disp(['Previous image is :', num2str(previmage)])
+%            disp(['Direction is: ', num2str(MovDir)])
         
             setappdata(fh, 'PrevImage', imagenb);
             setappdata(fh, 'MoveDirection', MovDir);
@@ -302,10 +343,14 @@ setappdata(fh, 'MoveDirection', 0);
         newYLim=getappdata(fh,'newYLim');
         zoomon=getappdata(fh, 'Zoomon'); 
         
-        %seq3=getappdata(fh, 'mymoddata');
+        dirpath=getappdata(fh, 'mymodpath');
+        filenames=getappdata(fh, 'mymodfiles');
         
         axes(ah);
-        image(sequencemod(:,:,:, imagenb));
+        test=fullfile(dirpath, filenames{imagenb})
+        sequencemod=imread(fullfile(dirpath, filenames{imagenb}));
+        image(sequencemod);
+
         refreshdata(ah); 
         set(ah, 'XLim',newXLim, 'YLim', newYLim);
         axis off; 
@@ -322,7 +367,9 @@ setappdata(fh, 'MoveDirection', 0);
         end
     end
 
+%------------------------------------------------------------------------%
 % Select a new Cell and create a new entry in the data structure
+%------------------------------------------------------------------------%
 
     function NewCell(hObject, eventdata, handle)
         
@@ -336,7 +383,6 @@ setappdata(fh, 'MoveDirection', 0);
             [xval yval]=ginput(1); %get position of the mouse pointer on the image
 
             if (nbcell==0) %If this is the first cell created
-                disp('Premiere cellule')
                 
                 %Prepare variables that will be added to the data structure
                 
@@ -348,7 +394,7 @@ setappdata(fh, 'MoveDirection', 0);
                 c=clock; %Get time and date
 
                 nbcell=nbcell+1; %Add a new cell to the cell count
-                disp(['NBcell=',num2str(nbcell)])
+                %disp(['NBcell=',num2str(nbcell)])
                 label=int2str(nbcell); %Transform the cell number into string for print out
                 
                 text(xval, yval,label); %Print out on the graph the number of the cell
@@ -393,9 +439,7 @@ setappdata(fh, 'MoveDirection', 0);
 
 
             else %if the new cell is not the first
-                
-                disp('C pas la premiere')
-                
+                             
                 imagenb = get(slh,'Value'); %get the position in the stack
                 
                 global extdata; %call the data structure to be updated
@@ -469,6 +513,10 @@ setappdata(fh, 'MoveDirection', 0);
         end
     end
 
+%------------------------------------------------------------------------%
+% Create ROIs
+%------------------------------------------------------------------------%
+
     function CreateROI(hObject, eventdata, handle, extdata, sequenceraw)
 
         %Call datastructure and data
@@ -493,14 +541,14 @@ setappdata(fh, 'MoveDirection', 0);
         
         %Get the image number or position in the stack
         imagenb = get(slh,'Value');
-
-        
-        %RawImage=getappdata(fh, 'mymoddata'); %%ATTENTION TRAVAIL SUR L'IMAGE PRE-TRAITEE POUR SIMPLIFIER...A CHANGER QUAND MIS EN SERVICE
-        %CurImage=RawImage(:,:,:,imagenbrois);
-        
+    
         %Store the current image using the current position in the stack.
         %CurImage=sequenceraw(:,:,:,imagenbrois);
-        CurImage=sequenceraw(:,:,:,imagenb);
+        dirpath=getappdata(fh, 'myrawpath');
+        filenames=getappdata(fh, 'myrawfiles');        
+        sequenceraw=imread(fullfile(dirpath, filenames{imagenb}));
+        
+        CurImage=sequenceraw;
         
         %If there are no roi associated with this cell
         if (roicounter==0)
@@ -512,7 +560,6 @@ setappdata(fh, 'MoveDirection', 0);
             
             %Store info in the data structure for Cells: current image number and ROI position 
         
-            %extdata.Cell(1,nbcell).ROI(1,roicounter).ImageNumber=imagenbrois;
             extdata.Cell(1,nbcell).ROI(1,roicounter).ImageNumber=imagenb;
             extdata.Cell(1,nbcell).ROI(1,roicounter).ROIXY=pos1;
             
@@ -565,7 +612,29 @@ setappdata(fh, 'MoveDirection', 0);
            
             %Create and store a black and white mask
             testMask=createMask(ro1);
-            extdata.Cell(1,nbcell).ROI(1,roicounter).Mask=testMask;
+            
+            %Test if the Mask is empty before going any further. If it is
+            %empty something is wrong with the ROI shape. Therefore, after 
+            %a warning message it proposes to create it allover again. 
+            %After recreating the ROI, it tests if the problem still exists. 
+            %If so it create another warning message proposing to continue
+            %the ROI creation and then delete the ROI
+            
+            if (size(testMask)==[0 0]) 
+                hwarn=msgbox('You created an empty ROI!! Please redo it', 'BadROIWarning', 'warn'); 
+                ro1=imfreehand(gca);
+                setClosed(ro1, 'True');
+            
+                testMask=createMask(ro1);
+                
+                if (size(testMask)==[0 0])
+                    hwarn=msgbox('You created an empty ROI AGAIN!! Something is wrong. Please DELETE THE CURRENT ROI and start the process again', 'SecondBadROIWarning', 'warn'); 
+                end
+            else
+                
+                extdata.Cell(1,nbcell).ROI(1,roicounter).Mask=testMask;
+            
+            end
             
             %Extract the XY information of the pixels included in the ROI
             %using the B&W Mask created.
@@ -578,7 +647,9 @@ setappdata(fh, 'MoveDirection', 0);
             if (sizeList==[1 1])
                 PixXY=PixList(1).PixelList;
                 extdata.Cell(1,nbcell).ROI(1,roicounter).PixelList=PixXY;
-               
+            elseif (sizeList==[2,1])
+                PixXY=PixList(1).PixelList;
+                extdata.Cell(1,nbcell).ROI(1,roicounter).PixelList=PixXY;                  
             else 
                 disp('Error: More than one identified ROI')
             end
@@ -600,12 +671,12 @@ setappdata(fh, 'MoveDirection', 0);
             PixVal=impixel(CurImage, xval, yval);
             %Store the pixel values in the Cell Data structure
             extdata.Cell(1,nbcell).ROI(1,roicounter).PixelValues=PixVal;
-           
-            disp('Ca Marche for the first')
-             
+            
+            %Insert here extract Centroid X, Y
+                      
         else %If this not the first ROI of the current cell
             
-            disp('Thats more than one dude')
+            disp('Thats more than one ROI')
             
             %Increment and update the roi counter
             roicounter=roicounter+1;
@@ -654,17 +725,40 @@ setappdata(fh, 'MoveDirection', 0);
             labelspval=extdata.Cell(1,nbcell).LabelXY;
             extdata.ImageMetadata(1,imagenb).LabelXY(tmpex, 1)=labelspval(1,1);
             extdata.ImageMetadata(1,imagenb).LabelXY(tmpex, 2)=labelspval(1,2);
-            
+
             testMask=createMask(ro1);
+                        %Test if the Mask is empty before going any further. If it is
+            %empty something is wrong with the ROI shape. Therefore, after 
+            %a warning message it proposes to create it allover again. 
+            %After recreating the ROI, it tests if the problem still exists. 
+            %If so it create another warning message proposing to continue
+            %the ROI creation and then delete the ROI
             
-            extdata.Cell(1,nbcell).ROI(1,roicounter).Mask=testMask;
+            if (size(testMask)==[0 0]) 
+                hwarn=msgbox('You created an empty ROI!! Please redo it', 'BadROIWarning', 'warn'); 
+                ro1=imfreehand(gca);
+                setClosed(ro1, 'True');
             
+                testMask=createMask(ro1);
+                
+                if (size(testMask)==[0 0])
+                    hwarn=msgbox('You created an empty ROI AGAIN!! Something is wrong. Please DELETE THE CURRENT ROI and start the process again', 'SecondBadROIWarning', 'warn'); 
+                end
+            else
+                
+                extdata.Cell(1,nbcell).ROI(1,roicounter).Mask=testMask;
+            
+            end
+
             PixList=regionprops(testMask, 'PixelList');
             sizeList=size(PixList);
             if (sizeList==[1 1])
                 PixXY=PixList(1).PixelList;
                 extdata.Cell(1,nbcell).ROI(1,roicounter).PixelList=PixXY;
-               
+            elseif (sizeList==[2,1])
+                PixXY=PixList(1).PixelList;
+                extdata.Cell(1,nbcell).ROI(1,roicounter).PixelList=PixXY;
+                
             else 
                 disp('Error: More than one identified ROI')
             end
@@ -676,12 +770,14 @@ setappdata(fh, 'MoveDirection', 0);
             size(yval);
             PixVal=impixel(CurImage, xval, yval);
             extdata.Cell(1,nbcell).ROI(1,roicounter).PixelValues=PixVal;
-            %delete(ro1);
-            disp('Ca Marche')
-            
+       
         end
         
     end
+
+%------------------------------------------------------------------------%
+% Save cell
+%------------------------------------------------------------------------%
 
     function SaveCell(hObject, eventdata)
         
@@ -689,6 +785,10 @@ setappdata(fh, 'MoveDirection', 0);
         
     end
  
+%------------------------------------------------------------------------%
+% Remove Cell
+%------------------------------------------------------------------------%
+
     function RemoveCell(extdata, hObject, eventdata)
         
         global extdata;
@@ -717,6 +817,10 @@ setappdata(fh, 'MoveDirection', 0);
         hwarn=msgbox('You deleted the latest created cell. If you press again you will also delete the previously created cell', 'RemoveCellWarning', 'warn'); 
         
     end
+
+%------------------------------------------------------------------------%
+% Remove ROI
+%------------------------------------------------------------------------%
 
     function RemoveROI(extdata, hObject, eventdata)
 %       
@@ -752,6 +856,10 @@ setappdata(fh, 'MoveDirection', 0);
        
     end
 
+%------------------------------------------------------------------------%
+% Show ROI and cell number
+%------------------------------------------------------------------------%
+
     function UpdateImageInfo(hObject, eventdata, extdata)
         
         %Check if data has been reloaded from pre-existing data structure
@@ -763,7 +871,7 @@ setappdata(fh, 'MoveDirection', 0);
         %Get the current position in the stack, i.e. the image number
         imagenb = get(slh, 'Value'); 
         
-        %Get the cel number
+        %Get the celL number
         nbcell=get(pbhnew, 'UserData');
         
         %Get the zoom information
@@ -782,12 +890,11 @@ setappdata(fh, 'MoveDirection', 0);
             %first of the stack
             if (imagenb==1) 
                 
-                disp('First image of the stack')
+                %disp('First image of the stack')
                 
                 if(size(extdata.ImageMetadata(imagenb).CellNumber, 2)==1)
                     %If size cellnumber array is one: can be zero cell or
                     %one cell
-                    disp('Only one entry: either cell or not')
                     
                     if (extdata.ImageMetadata(imagenb).CellNumber(1, 1)==0)
                         %if the value of the array is zero, meaning no
@@ -798,16 +905,13 @@ setappdata(fh, 'MoveDirection', 0);
                     else
                         %if the value is not zero, there is a cell that has
                         %to be shown then get cellnumber and label position
-                        disp('Well there is a cell in the first image')
-                        
+                                                
                         cellnumber=extdata.ImageMetadata(imagenb).CellNumber(1,1);
                         labelxy=extdata.ImageMetadata(imagenb).LabelXY(1, :);
                         roixy=extdata.ImageMetadata(imagenb).ROIXY{1, 1};
                         
                         if (newXLim(1,1)==0 && newXLim(1,2)==1 && newYLim(1,1)==0 && newYLim(1,2)==1)
-                            
-                            disp('The zoom for the first image is mode Full picture')
-                            
+                                                       
                             if ((1/labelxy(1, 1))>newXLim(1,1) && (1/labelxy(1, 1))<newXLim(1,2) && (1/labelxy(1, 2))>newYLim(1,1) && (1/labelxy(1, 2))<newYLim(1,2))
                                 
                                 hold on
@@ -817,17 +921,10 @@ setappdata(fh, 'MoveDirection', 0);
                                 text(xval, yval, label);
                                 plot(roixy(:,1), roixy(:, 2), 'r');
                                 hold off
-                                disp('Lets plot that cell on full picture of the first image')
-                                
-                            else
-                                
-                                disp('Out of bound on the full picture, weird!!')
-                                
                             end
                             
                         else
                             
-                            disp('The Zoom is on for the first image')
                             if (labelxy(1, 1)>newXLim(1,1) && labelxy(1, 1)<newXLim(1,2) && labelxy(1, 2)>newYLim(1,1) && labelxy(1, 2)<newYLim(1,2))
                                 
                                 hold on
@@ -837,12 +934,6 @@ setappdata(fh, 'MoveDirection', 0);
                                 text(xval, yval, label);
                                 plot(roixy(:,1), roixy(:, 2), 'r');
                                 hold off
-                                disp('Lets plot that cell within the zoom boundaries')
-                                
-                            else
-                                
-                                disp('Out of bound for ONLY CELL on the first image')
-                                
                             end
                             
                         end
@@ -853,7 +944,6 @@ setappdata(fh, 'MoveDirection', 0);
                 else
                     %If size is larger than one, there are more than one
                     %cell to be shown
-                    disp('Well there is more than one cell in the first image')
                     
                     cellnumber=extdata.ImageMetadata(imagenb).CellNumber(:,:);
                     labelxy=extdata.ImageMetadata(imagenb).LabelXY;
@@ -862,8 +952,6 @@ setappdata(fh, 'MoveDirection', 0);
                     for i=1:size(cellnumber, 2)
                         
                         if (newXLim(1,1)==0 && newXLim(1,2)==1 && newYLim(1,1)==0 && newYLim(1,2)==1)
-
-                            disp('Full picture with more than one cell on the first image')
 
                             if ((1/labelxy(i, 1))>newXLim(1,1) && (1/labelxy(i, 1))<newXLim(1,2) && (1/labelxy(i, 2))>newYLim(1,1) && (1/labelxy(i, 2))<newYLim(1,2))
 
@@ -876,15 +964,11 @@ setappdata(fh, 'MoveDirection', 0);
                                 text(xval, yval, label);
                                 plot(roi(:,1), roi(:, 2), 'r');
                                 hold off
-                                disp('Lets plot these cells on the first image on full picture')
-                            else
-
-                                disp('Out of bound on the full picture, weird!!')
-
+                                                           
                             end
 
                         else
-                            disp('The Zoom is on for the first image with several cells')
+                            
                             if (labelxy(i, 1)>newXLim(1,1) && labelxy(i, 1)<newXLim(1,2) && labelxy(i, 2)>newYLim(1,1) && labelxy(i, 2)<newYLim(1,2))
 
                                 hold on
@@ -897,10 +981,6 @@ setappdata(fh, 'MoveDirection', 0);
                                 plot(roi(:,1), roi(:, 2), 'r');
                                 hold off
 
-                            else
-
-                                disp('Out of bound for the different cells on the first image')
-
                             end
 
                         end
@@ -909,11 +989,8 @@ setappdata(fh, 'MoveDirection', 0);
                 
             else
              %If this is not the first image of the stack
-                disp('Well this is not the first image')
-                
+
                 if(size(extdata.ImageMetadata(imagenb).CellNumber, 2)==1)
-                    
-                    disp('In the current image there is only one entry: either no cell or one cell')
                     %If the size for the current image is one: there can be
                     %either no cells or one
                     if (extdata.ImageMetadata(imagenb).CellNumber(1, 1)==0)
@@ -924,13 +1001,10 @@ setappdata(fh, 'MoveDirection', 0);
                         disp('There is no cell created on that image')
                         
                         if (MovDir==1)
-                            
-                            disp('We are going deeper into the stack')
-                            
+                                                       
                             if(size(extdata.ImageMetadata(imagenb-1).CellNumber, 2)==1)
                                 %If the size of the cellnumber for the previous
                                 %image then check its value
-                                disp('Lets see if there is at least one cell defined in the previous image')
                                 
                                 if (extdata.ImageMetadata(imagenb-1).CellNumber(1, 1)==0)
                                 %if the value of the array is zero, meaning no
@@ -941,7 +1015,6 @@ setappdata(fh, 'MoveDirection', 0);
                                 else
                                 %if the value is not zero, there is a cell that has
                                 %to be shown then get cellnumber and label position
-                                disp('There is at least one cell defined in the previous image')
                                 
                                     cellnumber=extdata.ImageMetadata(imagenb-1).CellNumber(:,:);
                                     labelxy=extdata.ImageMetadata(imagenb-1).LabelXY;
@@ -951,43 +1024,28 @@ setappdata(fh, 'MoveDirection', 0);
 
                                         if (newXLim(1,1)==0 && newXLim(1,2)==1 && newYLim(1,1)==0 && newYLim(1,2)==1)
 
-                                            disp('The zoom mode for the current image is Full picture and there is one cell defined in the previous image')
-
                                             if ((1/labelxy(i, 1))>newXLim(1,1) && (1/labelxy(i, 1))<newXLim(1,2) && (1/labelxy(i, 2))>newYLim(1,1) && (1/labelxy(i, 2))<newYLim(1,2))
 
                                                 hold on
                                                 label=int2str(cellnumber(1, i));
                                                 xval=labelxy(i, 1);
                                                 yval=labelxy(i, 2);
-                                                %roi=roixy{i, 1};
 
                                                 text(xval, yval, label);
-                                                %plot(roi(:,1), roi(:, 2), 'r');
                                                 hold off
-
-                                            else
-
-                                                disp('Out of bound on the full picture, weird!!')
 
                                             end
 
                                         else
-                                            disp('The Zoom is on for the current image with one cell in the previous image')
                                             if (labelxy(i, 1)>newXLim(1,1) && labelxy(i, 1)<newXLim(1,2) && labelxy(i, 2)>newYLim(1,1) && labelxy(i, 2)<newYLim(1,2))
 
                                                 hold on
                                                 label=int2str(cellnumber(1, i));
                                                 xval=labelxy(i, 1);
                                                 yval=labelxy(i, 2);
-                                                %roi=roixy{i, 1};
 
                                                 text(xval, yval, label);
-                                                %plot(roi(:,1), roi(:, 2), 'r');
                                                 hold off
-
-                                            else
-
-                                                disp('The label for the unique cell of the previous image is Out of bound for the current image')
 
                                             end
 
@@ -997,16 +1055,13 @@ setappdata(fh, 'MoveDirection', 0);
                                 end
 
                             else
-                                disp('There is more than one cell in the previous image')
+                                %disp('There is more than one cell in the previous image')
                                 cellnumber=extdata.ImageMetadata(imagenb-1).CellNumber(:,:);
                                 labelxy=extdata.ImageMetadata(imagenb-1).LabelXY;
-                                %roixy=extdata.ImageMetadata(imagenb-1).ROIXY;
 
                                 for i=1:size(cellnumber, 2)
 
                                     if (newXLim(1,1)==0 && newXLim(1,2)==1 && newYLim(1,1)==0 && newYLim(1,2)==1)
-
-                                        disp('The zoom mode for the current image is Full picture and the previous image several cells')
 
                                         if ((1/labelxy(i, 1))>newXLim(1,1) && (1/labelxy(i, 1))<newXLim(1,2) && (1/labelxy(i, 2))>newYLim(1,1) && (1/labelxy(i, 2))<newYLim(1,2))
 
@@ -1017,15 +1072,9 @@ setappdata(fh, 'MoveDirection', 0);
 
                                             text(xval, yval, label);
                                             hold off
-
-                                        else
-
-                                            disp('Out of bound on the full picture, weird!!')
-
                                         end
 
                                     else
-                                        disp('The zoom is on for the current image and there are several cells in the previous image')
                                         if (labelxy(i, 1)>newXLim(1,1) && labelxy(i, 1)<newXLim(1,2) && labelxy(i, 2)>newYLim(1,1) && labelxy(i, 2)<newYLim(1,2))
 
                                             hold on
@@ -1035,11 +1084,6 @@ setappdata(fh, 'MoveDirection', 0);
 
                                             text(xval, yval, label);
                                             hold off
-
-                                        else
-
-                                            disp('The label of the cells in the previous image is Out of bound for the current image')
-
                                         end
 
                                     end
@@ -1049,33 +1093,26 @@ setappdata(fh, 'MoveDirection', 0);
                             
                         elseif (MovDir==-1)
 
-                            disp('We are going back to the top of the stack')
-                            
                             if(size(extdata.ImageMetadata(imagenb+1).CellNumber, 2)==1)
                                 %If the size of the cellnumber for the previous
                                 %image then check its value
-                                disp('Lets see if there is at least one cell defined in the next image')
                                 
                                 if (extdata.ImageMetadata(imagenb+1).CellNumber(1, 1)==0)
                                 %if the value of the array is zero, meaning no
                                 %cells then do nothing
 
-                                disp('Do Nothing: No Roi defined for the current and the next image')
+                                    disp('Do Nothing: No Roi defined for the current and the next image')
 
                                 else
                                 %if the value is not zero, there is a cell that has
                                 %to be shown then get cellnumber and label position
-                                disp('There is at least one cell defined in the next image')
                                 
                                     cellnumber=extdata.ImageMetadata(imagenb+1).CellNumber(:,:);
                                     labelxy=extdata.ImageMetadata(imagenb+1).LabelXY;
-                                    %roixy=extdata.ImageMetadata(imagenb+1).ROIXY;
 
                                     for i=1:size(cellnumber, 2)
 
                                         if (newXLim(1,1)==0 && newXLim(1,2)==1 && newYLim(1,1)==0 && newYLim(1,2)==1)
-
-                                           disp('The zoom mode for the current image is Full picture and there is one cell defined in the next image')
 
                                             if ((1/labelxy(i, 1))>newXLim(1,1) && (1/labelxy(i, 1))<newXLim(1,2) && (1/labelxy(i, 2))>newYLim(1,1) && (1/labelxy(i, 2))<newYLim(1,2))
 
@@ -1086,15 +1123,9 @@ setappdata(fh, 'MoveDirection', 0);
    
                                                 text(xval, yval, label);
                                                 hold off
-
-                                            else
-
-                                                disp('Out of bound on the full picture, weird!!')
-
                                             end
 
                                         else
-                                            disp('The Zoom is on for the current image with one cell in the next image')
                                             if (labelxy(i, 1)>newXLim(1,1) && labelxy(i, 1)<newXLim(1,2) && labelxy(i, 2)>newYLim(1,1) && labelxy(i, 2)<newYLim(1,2))
     
                                                 hold on
@@ -1104,10 +1135,6 @@ setappdata(fh, 'MoveDirection', 0);
 
                                                 text(xval, yval, label);
                                                 hold off
-
-                                            else
-
-                                                disp('The label for the unique cell of the next image is Out of bound for the current image')
 
                                             end
 
@@ -1119,15 +1146,12 @@ setappdata(fh, 'MoveDirection', 0);
 
                             else
 
-                                disp('There is more than one cell in the next image')                                
                                 cellnumber=extdata.ImageMetadata(imagenb+1).CellNumber(:,:);
                                 labelxy=extdata.ImageMetadata(imagenb+1).LabelXY;
 
                                 for i=1:size(cellnumber, 2)
 
                                     if (newXLim(1,1)==0 && newXLim(1,2)==1 && newYLim(1,1)==0 && newYLim(1,2)==1)
-
-                                        disp('The zoom mode for the current image is Full picture and the next image several cells')
 
                                         if ((1/labelxy(i, 1))>newXLim(1,1) && (1/labelxy(i, 1))<newXLim(1,2) && (1/labelxy(i, 2))>newYLim(1,1) && (1/labelxy(i, 2))<newYLim(1,2))
 
@@ -1138,15 +1162,9 @@ setappdata(fh, 'MoveDirection', 0);
 
                                             text(xval, yval, label);
                                             hold off
-
-                                        else
-
-                                            disp('Out of bound on the full picture, weird!!')
-
                                         end
 
                                     else
-                                        disp('The zoom is on for the current image and there are several cells in the next image')
                                         if (labelxy(i, 1)>newXLim(1,1) && labelxy(i, 1)<newXLim(1,2) && labelxy(i, 2)>newYLim(1,1) && labelxy(i, 2)<newYLim(1,2))
 
                                             hold on
@@ -1156,10 +1174,6 @@ setappdata(fh, 'MoveDirection', 0);
 
                                             text(xval, yval, label);
                                             hold off
-
-                                        else
-
-                                            disp('The label of the cells in the next image is Out of bound for the current image')
 
                                         end
 
@@ -1171,7 +1185,6 @@ setappdata(fh, 'MoveDirection', 0);
                             
                         end
                     else
-                        disp('There is a cell in the current image')
                         
                         %if the value is not zero, there is a cell that has
                         %to be shown then get cellnumber and label position
@@ -1183,8 +1196,6 @@ setappdata(fh, 'MoveDirection', 0);
                         for i=1:size(cellnumber, 2)
 
                             if (newXLim(1,1)==0 && newXLim(1,2)==1 && newYLim(1,1)==0 && newYLim(1,2)==1)
-
-                                disp('Full picture')
 
                                 if ((1/labelxy(i, 1))>newXLim(1,1) && (1/labelxy(i, 1))<newXLim(1,2) && (1/labelxy(i, 2))>newYLim(1,1) && (1/labelxy(i, 2))<newYLim(1,2))
 
@@ -1198,14 +1209,9 @@ setappdata(fh, 'MoveDirection', 0);
                                     plot(roi(:,1), roi(:, 2), 'r');
                                     hold off
 
-                                else
-
-                                    disp('Out of bound on the full picture, weird!!')
-
                                 end
 
                             else
-                                disp('Zoom In')
                                 if (labelxy(i, 1)>newXLim(1,1) && labelxy(i, 1)<newXLim(1,2) && labelxy(i, 2)>newYLim(1,1) && labelxy(i, 2)<newYLim(1,2))
 
                                     hold on
@@ -1218,10 +1224,6 @@ setappdata(fh, 'MoveDirection', 0);
                                     plot(roi(:,1), roi(:, 2), 'r');
                                     hold off
 
-                                else
-
-                                    disp('Out of bound for the current image with one cell')
-
                                 end
 
                             end
@@ -1230,7 +1232,6 @@ setappdata(fh, 'MoveDirection', 0);
                     
                     end
                 else
-                    disp (' There are more than one cell defined in the current image')
                     cellnumber=extdata.ImageMetadata(imagenb).CellNumber(:,:);
                     labelxy=extdata.ImageMetadata(imagenb).LabelXY;
                     roixy=extdata.ImageMetadata(imagenb).ROIXY;
@@ -1238,8 +1239,6 @@ setappdata(fh, 'MoveDirection', 0);
                     for i=1:size(cellnumber, 2)
                         
                         if (newXLim(1,1)==0 && newXLim(1,2)==1 && newYLim(1,1)==0 && newYLim(1,2)==1)
-
-                            disp('Full picture')
 
                             if ((1/labelxy(i, 1))>newXLim(1,1) && (1/labelxy(i, 1))<newXLim(1,2) && (1/labelxy(i, 2))>newYLim(1,1) && (1/labelxy(i, 2))<newYLim(1,2))
 
@@ -1252,15 +1251,9 @@ setappdata(fh, 'MoveDirection', 0);
                                 text(xval, yval, label);
                                 plot(roi(:,1), roi(:, 2), 'r');
                                 hold off
-
-                            else
-
-                                disp('Out of bound on the full picture, weird!!')
-
                             end
 
                         else
-                            disp('Zoom In')
                             if (labelxy(i, 1)>newXLim(1,1) && labelxy(i, 1)<newXLim(1,2) && labelxy(i, 2)>newYLim(1,1) && labelxy(i, 2)<newYLim(1,2))
 
                                 hold on
@@ -1272,11 +1265,6 @@ setappdata(fh, 'MoveDirection', 0);
                                 text(xval, yval, label);
                                 plot(roi(:,1), roi(:, 2), 'r');
                                 hold off
-
-                            else
-
-                                disp('Out of bound for the current image with more than one cell')
-
                             end
 
                         end
@@ -1285,18 +1273,15 @@ setappdata(fh, 'MoveDirection', 0);
             end
         end
     end
-    
+
+%------------------------------------------------------------------------%
 % Export function to store the cell structure with the data and to store
 % plotting metadata (plotinfo, roitoplot)
+%------------------------------------------------------------------------%
 
     function ExportData(hObject, eventdata, extdata)
         
-        %dirpath=getappdata(fh, 'mymodpath');
-        %filename=getappdata(fh, 'mymodfiles')
-        %expfilname=filename{1}
-        %expdata='/ROIExtraction.mat';
-        %exppath=[dirpath, expdata];
-        [filname,pathfile]=uiputfile('*.mat', 'Save ROI Files');
+         [filname,pathfile]=uiputfile('*.mat', 'Save ROI Files');
         
         global extdata
         
@@ -1305,9 +1290,13 @@ setappdata(fh, 'MoveDirection', 0);
         
     end
 
+%------------------------------------------------------------------------%
+% Create Keyboard shrotcuts
+%------------------------------------------------------------------------%
+
     function myShortKey(src, evnt)
         
-        %initialize these variables
+        %initialize variables
         control = 0;
         alt = 0;
         shift = 0;
@@ -1357,7 +1346,6 @@ setappdata(fh, 'MoveDirection', 0);
             ExportData()
             
         elseif (strcmp(evnt.Key, 'z'))
-        %elseif (control==1 && strcmp(evnt.Key, 'z'))
             
             if (strcmp(get(zoom, 'Enable'), 'on'))
                 
@@ -1369,6 +1357,7 @@ setappdata(fh, 'MoveDirection', 0);
                 zoom on
                 
             end
+            
         elseif (strcmp(evnt.Key, 'leftarrow'))
             
             disp ('Left Arrow')
@@ -1389,5 +1378,18 @@ setappdata(fh, 'MoveDirection', 0);
         end
     end
 
+%------------------------------------------------------------------------%
+% Visualize data
+%------------------------------------------------------------------------%
+
+    function VisuInterface(hObject, eventdata, extdata)
+        
+        global extdata
+        RGBdata=[];
+        
+        RGBdata=ExtractMeanDataMod(extdata, RGBdata);
+        PlotMultiGraphs(RGBdata);
+        
+    end
 
 end
