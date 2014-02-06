@@ -96,13 +96,13 @@ pbhexp=uicontrol(phanalyse, 'Style', 'pushbutton', 'String', 'Export Data (e)', 
 %------------------------------------------------------------------------%
 
 %------------------------------------------------------------------------%
-% Show plot of data extracted
+% Show plot of data extracted - in progress
+% 
+% phvisu=uipanel('Parent', gcf, 'Title', 'Data Visualization','Position', [0.05 0.05 0.2 0.10]);
+% pbhnew=uicontrol(phvisu, 'Style', 'pushbutton', 'String', 'Show plots', 'Units', 'normalized', 'Position',[0.05, 0.05, 0.9, 0.75], 'Callback', @VisuInterface);
+% 
+% ah=axes('Parent', fh, 'Visible', 'off', 'Position', [0.275, 0.05, 0.7, 0.9]);
 %------------------------------------------------------------------------%
-
-phvisu=uipanel('Parent', gcf, 'Title', 'Data Visualization','Position', [0.05 0.05 0.2 0.10]);
-pbhnew=uicontrol(phvisu, 'Style', 'pushbutton', 'String', 'Show plots', 'Units', 'normalized', 'Position',[0.05, 0.05, 0.9, 0.75], 'Callback', @VisuInterface);
-
-ah=axes('Parent', fh, 'Visible', 'off', 'Position', [0.275, 0.05, 0.7, 0.9]);
 
 %------------------------------------------------------------------------%
 % Create the slider to navigate through the stack
@@ -189,8 +189,8 @@ setappdata(fh, 'MoveDirection', 0);
         
         set(slh, 'Max', numFrame, 'SliderStep', [(1/(numFrame-1)) (1/(numFrame-1))]);
                 
-        cmap=colormap
-        size(cmap)
+        cmap=colormap;
+        size(cmap);
         
     end
 
@@ -227,10 +227,10 @@ setappdata(fh, 'MoveDirection', 0);
         
         %Import modified data
         
-        dirpat2=extdata.ModData
+        dirpat2=extdata.ModData;
         filext='*.tif';
-        dirOutput2=dir(fullfile(dirpat2, filext))
-        filenames={dirOutput2.name}
+        dirOutput2=dir(fullfile(dirpat2, filext));
+        filenames={dirOutput2.name};
         
         if (size(filenames)==[0 0])
             
@@ -347,7 +347,7 @@ setappdata(fh, 'MoveDirection', 0);
         filenames=getappdata(fh, 'mymodfiles');
         
         axes(ah);
-        test=fullfile(dirpath, filenames{imagenb})
+        
         sequencemod=imread(fullfile(dirpath, filenames{imagenb}));
         image(sequencemod);
 
@@ -606,7 +606,7 @@ setappdata(fh, 'MoveDirection', 0);
             extdata.ImageMetadata(1,imagenb).ROIXY{tmpex2,1}=pos1;
             
             extdata.ImageMetadata(1,imagenb).CellNumber(1,tmpex2)=nbcell;           
-            labelspval=extdata.Cell(1,nbcell).LabelXY
+            labelspval=extdata.Cell(1,nbcell).LabelXY;
             extdata.ImageMetadata(1,imagenb).LabelXY(tmpex2, 1)=labelspval(1,1);
             extdata.ImageMetadata(1,imagenb).LabelXY(tmpex2, 2)=labelspval(1,2);
            
@@ -676,7 +676,7 @@ setappdata(fh, 'MoveDirection', 0);
                       
         else %If this not the first ROI of the current cell
             
-            disp('Thats more than one ROI')
+           % disp('Thats more than one ROI')
             
             %Increment and update the roi counter
             roicounter=roicounter+1;
@@ -793,8 +793,8 @@ setappdata(fh, 'MoveDirection', 0);
         
         global extdata;
         
-        imagenb=get(gca,'UserData')
-        nbcell=get(pbhnew, 'UserData')
+        imagenb=get(gca,'UserData');
+        nbcell=get(pbhnew, 'UserData');
         
         extdata.Cell(nbcell)=[];
         
@@ -811,11 +811,12 @@ setappdata(fh, 'MoveDirection', 0);
         
         end
 
-        nbcell=nbcell-1
+        nbcell=nbcell-1;
         set(pbhnew, 'UserData',nbcell);
         UpdateImageInfo();
         hwarn=msgbox('You deleted the latest created cell. If you press again you will also delete the previously created cell', 'RemoveCellWarning', 'warn'); 
-        
+        set(pbhroi, 'UserData', 1);
+                
     end
 
 %------------------------------------------------------------------------%
@@ -998,7 +999,7 @@ setappdata(fh, 'MoveDirection', 0);
                         %cells then check if there are cells defined in the
                         %neighboring image, depending on the sense in the
                         %stack
-                        disp('There is no cell created on that image')
+                        %disp('There is no cell created on that image')
                         
                         if (MovDir==1)
                                                        
@@ -1313,7 +1314,7 @@ setappdata(fh, 'MoveDirection', 0);
             end
         end
         
-        keytest=evnt.Key
+        keytest=evnt.Key;
         
         if (strcmp(evnt.Key, 'n'))        
             
@@ -1379,17 +1380,18 @@ setappdata(fh, 'MoveDirection', 0);
     end
 
 %------------------------------------------------------------------------%
-% Visualize data
+% Visualize data - Transform the data to be visualized with graph 
+% functions developed by Willy Suppato. - in progress
+% 
+%     function VisuInterface(hObject, eventdata, extdata)
+%         
+%         global extdata
+%         RGBdata=[];
+%         
+%         RGBdata=ExtractMeanDataMod(extdata, RGBdata);
+%         PlotMultiGraphs(RGBdata);
+%         
+%     end
 %------------------------------------------------------------------------%
-
-    function VisuInterface(hObject, eventdata, extdata)
-        
-        global extdata
-        RGBdata=[];
-        
-        RGBdata=ExtractMeanDataMod(extdata, RGBdata);
-        PlotMultiGraphs(RGBdata);
-        
-    end
 
 end
